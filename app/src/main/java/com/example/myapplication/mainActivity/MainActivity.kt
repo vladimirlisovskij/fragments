@@ -7,9 +7,10 @@ import android.view.ViewTreeObserver
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import com.example.myapplication.R
-import com.example.myapplication.ThirdPageFragment
+import com.example.myapplication.thirdPage.ThirdPageFragment
 import com.example.myapplication.firstPage.FirstPage
 import com.example.myapplication.secondPage.SecondPage
+import com.google.android.gms.location.LocationServices
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import moxy.MvpAppCompatActivity
 import moxy.presenter.InjectPresenter

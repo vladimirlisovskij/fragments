@@ -4,10 +4,10 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.example.myapplication.DaggerMainComponent
 import com.example.myapplication.R
 import com.example.myapplication.activityHolder.ActivityModule
 import com.example.myapplication.contextHolder.ContextModule
+import com.example.myapplication.mainComponent.DaggerMainComponent
 import com.example.myapplication.retrofit.WeatherContainer
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter

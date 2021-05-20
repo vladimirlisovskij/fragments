@@ -6,11 +6,11 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.myapplication.DaggerMainComponent
 import com.example.myapplication.R
 import com.example.myapplication.activityHolder.ActivityModule
 import com.example.myapplication.contextHolder.ContextModule
 import com.example.myapplication.mainActivity.MainActivity
+import com.example.myapplication.mainComponent.DaggerMainComponent
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
 

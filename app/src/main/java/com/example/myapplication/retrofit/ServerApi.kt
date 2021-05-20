@@ -10,7 +10,15 @@ interface ServerApi {
 
         fun getRequest(id: Int) : String {
             return "weather" + // текущая погода
-                    "?id=" + id.toString() + // Симферополь
+                    "?id=" + id.toString() +
+                    "&units=metric" + // градусы Цельсия
+                    "&appid=30796e96fd16433e49bdf7b5fd4ac746"
+        }
+
+        fun getGeoRequest(lat: Double, lon: Double) : String {
+            return "weather" + // текущая погода
+                    "?lat=" + lat.toString() +
+                    "&lon=" + lon.toString() +
                     "&units=metric" + // градусы Цельсия
                     "&appid=30796e96fd16433e49bdf7b5fd4ac746"
         }

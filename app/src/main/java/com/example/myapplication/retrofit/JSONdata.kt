@@ -25,4 +25,5 @@ class JSONData {
     var sys: Sys? = null
     val main: Main? = null
     val name: String? = null
+    val id: String? = null
 }

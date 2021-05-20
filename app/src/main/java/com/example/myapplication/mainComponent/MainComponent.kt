@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.myapplication.mainComponent
 
 import com.example.myapplication.activityHolder.ActivityHolder
 import com.example.myapplication.activityHolder.ActivityModule

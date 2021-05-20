@@ -1,6 +1,6 @@
 package com.example.myapplication.interactors
 
-import com.example.myapplication.DaggerMainComponent
+import com.example.myapplication.mainComponent.DaggerMainComponent
 import dagger.Module
 
 @Module

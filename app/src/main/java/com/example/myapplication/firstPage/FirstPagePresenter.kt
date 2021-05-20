@@ -1,6 +1,5 @@
 package com.example.myapplication.firstPage
 
-//import com.example.myapplication.retrofit.DaggerRetrofitComponent
 import com.example.myapplication.interactors.APIInteractor
 import com.example.myapplication.toster.Toster
 import kotlinx.coroutines.*

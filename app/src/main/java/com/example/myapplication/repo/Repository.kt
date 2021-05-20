@@ -1,13 +1,20 @@
 package com.example.myapplication.repo
 
-//import com.example.myapplication.room.DaggerDAOComponent
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.LocationListener
+import androidx.core.app.ActivityCompat
+import com.example.myapplication.activityHolder.ActivityHolder
 import com.example.myapplication.contextHolder.ContextHolder
+import com.example.myapplication.retrofit.JSONData
 import com.example.myapplication.retrofit.RetrofitBuilder
 import com.example.myapplication.retrofit.ServerApi
 import com.example.myapplication.retrofit.WeatherContainer
 import com.example.myapplication.room.DAOBuilder
 import com.example.myapplication.room.Employee
+import com.google.android.gms.location.LocationServices
+import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -15,29 +22,28 @@ import javax.inject.Inject
 class Repository @Inject constructor (
         var retrofitBuilder: RetrofitBuilder,
         var daoBuilder: DAOBuilder,
-        var contextHolder: ContextHolder
+        var contextHolder: ContextHolder,
+        var activityHolder: ActivityHolder
 ) {
     companion object {
-        private val PREF_KEY = "repo.prefKey"
-        private val CITY_KEY = "repo.CITYKey"
+        private const val PREF_KEY = "repo.prefKey"
+        private const val CITY_KEY = "repo.CityKey"
     }
 
     fun setCityId(id: Int){
-        contextHolder.getContext().getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE).let {
-            it.edit()
-                .putInt(CITY_KEY, id)
-                .apply()
-        }
+        contextHolder.getContext().getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE).edit()
+            .putInt(CITY_KEY, id)
+            .apply()
     }
 
     suspend fun getServerResponse() : WeatherContainer {
-        var curCityID = 693805
-        contextHolder.getContext().getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE).let {
-            curCityID = it.getInt(CITY_KEY, curCityID)
-        }
+        val curCityID = contextHolder
+            .getContext()
+            .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
+            .getInt(CITY_KEY, 693805)
 
-        val mes = retrofitBuilder.getRetrofit().create(ServerApi::class.java).getMessage(ServerApi.getRequest(curCityID));
-        var container: WeatherContainer = WeatherContainer()
+        val mes = retrofitBuilder.getRetrofit().create(ServerApi::class.java).getMessage(ServerApi.getRequest(curCityID))
+        val container: WeatherContainer = WeatherContainer()
         if (mes.isSuccessful) {
             val jDoc = mes.body();
             jDoc?.let {
@@ -70,7 +76,6 @@ class Repository @Inject constructor (
         }
         return container
     }
-
 
     fun getAll() : ArrayList<String> {
         val employeeList: List<Employee> = daoBuilder.getDAO().getAll()
