@@ -7,8 +7,12 @@ import javax.inject.Inject
 class APIInteractor @Inject constructor (
         var repository: Repository
 ) {
-    suspend fun getAll() : WeatherContainer {
-        return repository.getServerResponse()
+    fun getAll(){
+        return repository.getWeather()
+    }
+
+    fun setCallback( callBack: ((WeatherContainer) -> Unit) ) {
+        repository.weatherCallback = callBack
     }
 
     fun setCityId(id: Int) {

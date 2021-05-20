@@ -16,21 +16,15 @@ class SecondPagePresenter : MvpPresenter<SecondPageView>() {
     @Inject
     lateinit var apiInteractor: APIInteractor
 
-    @Inject
-    lateinit var toster: Toster
-
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
-    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        toster.makeToast(throwable.message ?: "BUG")
+    override fun onFirstViewAttach() {
+        super.onFirstViewAttach()
+        dbInteractor.setCallback {
+            viewState.setItems(it)
+        }
     }
 
     fun getItems() {
-        scope.launch(Dispatchers.IO + exceptionHandler) {
-            val res = dbInteractor.getAll()
-            withContext(Dispatchers.Main) {
-                viewState.setItems(res)
-            }
-        }
+        dbInteractor.getApi()
     }
 
     fun setCity(id: Int) {
@@ -38,8 +32,6 @@ class SecondPagePresenter : MvpPresenter<SecondPageView>() {
     }
 
     fun addItem(string: String) {
-        scope.launch(Dispatchers.IO + exceptionHandler) {
-            dbInteractor.insert(string)
-        }
+        dbInteractor.insert(string)
     }
 }

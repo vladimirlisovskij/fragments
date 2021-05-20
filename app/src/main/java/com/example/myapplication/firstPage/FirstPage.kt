@@ -43,7 +43,6 @@ class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageV
         swipeRefreshLayout = view.findViewById(R.id.swipeRefresh)
         swipeRefreshLayout.setOnRefreshListener {
             presenter.refresh()
-            swipeRefreshLayout.isRefreshing = false
         }
 
         DaggerMainComponent
@@ -64,6 +63,14 @@ class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageV
         sriseTV.text = container.sriseStr
         timeTV.text = container.timeStr
         nameTV.text = container.name
+    }
+
+    override fun startRefresh() {
+        swipeRefreshLayout.isRefreshing = true
+    }
+
+    override fun stopRefresh() {
+        swipeRefreshLayout.isRefreshing = false
     }
 
     companion object {

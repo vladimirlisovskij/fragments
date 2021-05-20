@@ -13,25 +13,17 @@ class FirstFragmentPresenter : MvpPresenter<FirstPageView>() {
     @Inject
     lateinit var apiInteractor: APIInteractor
 
-    @Inject
-    lateinit var toster: Toster
-
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()
+        apiInteractor.setCallback {
+            viewState.setInfo(it)
+            viewState.stopRefresh()
+        }
         refresh()
     }
 
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
-    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        toster.makeToast(throwable.localizedMessage ?: "BUG")
-    }
-
     fun refresh() {
-        scope.launch(Dispatchers.IO + exceptionHandler) {
-            val container = apiInteractor.getAll()
-            withContext(Dispatchers.Main) {
-                viewState.setInfo(container)
-            }
-        }
+        viewState.startRefresh()
+        apiInteractor.getAll()
     }
 }

@@ -10,5 +10,6 @@ class WeatherContainer (
     var ssetStr: String? = null,
     var sriseStr: String? = null,
     var timeStr: String? = null,
-    var name: String? = null
+    var name: String? = null,
+    var id: String? = null
 )
