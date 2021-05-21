@@ -138,7 +138,7 @@ class Repository @Inject constructor (
                             retrofitBuilder
                                 .getRetrofit()
                                 .create(ServerApi::class.java)
-                                .getMessage(ServerApi.getRequest(693805))
+                                .getMessage(ServerApi.getGeoRequest(0.0, 0.0))
                         } else {
                             val lat = it.latitude
                             val lon = it.longitude
@@ -164,7 +164,7 @@ class Repository @Inject constructor (
                     val curCityID = contextHolder
                         .getContext()
                         .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
-                        .getInt(CITY_KEY, 693805)
+                        .getInt(CITY_KEY, 6295630)
 
                     val mes = retrofitBuilder
                         .getRetrofit()
