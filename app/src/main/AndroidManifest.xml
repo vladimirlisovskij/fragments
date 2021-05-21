@@ -14,7 +14,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat">
-<!--        <activity android:name=".mainActivity.MainActivity"/>-->
         <activity android:name=".mainActivity.MainActivity"
             android:theme="@style/splashScreen">
             <intent-filter>

@@ -2,6 +2,8 @@ package com.example.myapplication.secondPage
 
 import com.example.myapplication.interactors.APIInteractor
 import com.example.myapplication.interactors.DBInteractor
+import leakcanary.AppWatcher
+import leakcanary.ObjectWatcher
 import moxy.InjectViewState
 import moxy.MvpPresenter
 import javax.inject.Inject
@@ -24,6 +26,15 @@ class SecondPagePresenter : MvpPresenter<SecondPageView>() {
             it?.let { viewState.addItem(it) }
             viewState.showBar(false)
         }
+    }
+
+    override fun onDestroy() {
+        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
+        appWatcher.expectWeaklyReachable(apiInteractor, "API INTERACTOR")
+        appWatcher.expectWeaklyReachable(dbInteractor, "API INTERACTOR")
+        apiInteractor.watch()
+        dbInteractor.watch()
+        super.onDestroy()
     }
 
     fun getItems() {

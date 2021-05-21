@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.myapplication.activityHolder.ActivityHolder
 import com.example.myapplication.contextHolder.ContextHolder
+import com.example.myapplication.mainActivity.MainActivity
 import com.example.myapplication.retrofit.JSONData
 import com.example.myapplication.retrofit.RetrofitBuilder
 import com.example.myapplication.retrofit.ServerApi
@@ -24,21 +26,38 @@ import javax.inject.Inject
 import kotlin.collections.ArrayList
 
 class Repository @Inject constructor (
-        val retrofitBuilder: RetrofitBuilder,
-        val daoBuilder: DAOBuilder,
-        val contextHolder: ContextHolder,
-        val activityHolder: ActivityHolder,
-        val toster: Toster
+        private val retrofitBuilder: RetrofitBuilder,
+        private val daoBuilder: DAOBuilder,
+        private val contextHolder: ContextHolder,
+        private val activityHolder: ActivityHolder,
+        private val toster: Toster
 ) {
     companion object {
         private const val PREF_KEY = "repo.prefKey"
         private const val CITY_KEY = "repo.CityKey"
+
+        private const val TEMP_LAB = "temp: "
+        private const val HUM_LAB = "humidity: "
+        private const val WMAIN_LAB = "weather: "
+        private const val WDESC_LAB = "weather desc: "
+        private const val WIND_LAB = "wind speed: "
+        private const val SSET_LAB = "sunset: "
+        private const val SRISE_LAB = "sunrise: "
+        private const val TIME_LAB = ""
+        private const val NAME_LAB = ""
+    }
+
+    private fun getPerm(permission: String, requestCode: Int) {
+        if (ContextCompat.checkSelfPermission(contextHolder.getContext(), permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(activityHolder.getActivity(), arrayOf(permission), requestCode)
+        }
     }
 
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         toster.makeToast(throwable.localizedMessage ?: "BUG")
     }
+
 
     fun watch() {
         val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
@@ -61,36 +80,25 @@ class Repository @Inject constructor (
     }
 
     private fun parseMes(mes: Response<JSONData>) : WeatherContainer {
-        val container: WeatherContainer = WeatherContainer()
+        val container = WeatherContainer()
         if (mes.isSuccessful) {
             val jDoc = mes.body();
             jDoc?.let {
-                container.tempStr = "temp: " + jDoc.main?.temp.toString()
-                container.humStr = "humidity: " + jDoc.main?.humidity.toString()
+                val sunTime = SimpleDateFormat("h:mm a", Locale.ENGLISH)
+                sunTime.timeZone = TimeZone.getTimeZone("UTC")
+                val cutTime = SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z", Locale.ENGLISH)
+                cutTime.timeZone = TimeZone.getTimeZone("UTC")
 
-                container.wMainStr = "weather: " + jDoc.weather?.elementAt(0)?.main;
-                container.wDescStr =
-                    "weather desc: " + jDoc.weather?.elementAt(0)?.description;
-
-                container.windStr = "wind speed: " + jDoc.wind?.speed.toString()
-
-                val sdf = SimpleDateFormat("h:mm a", Locale.ENGLISH)
-                sdf.timeZone = TimeZone.getTimeZone("UTC")
-
-                container.ssetStr = "sunset: " + jDoc.sys?.sunset?.let {
-                    sdf.format(Date(it * 1000))
-                }
-
-                container.sriseStr = "sunrise: " + jDoc.sys?.sunrise?.let {
-                    sdf.format(Date(it * 1000))
-                }
-
-                val formatter = SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z")
-                val date = Date(System.currentTimeMillis())
-                container.timeStr = formatter.format(date)
-
-                container.name = jDoc.name
-                container.id = jDoc.id
+                container.tempStr = TEMP_LAB + it.main?.temp.toString()
+                container.humStr = HUM_LAB + it.main?.humidity.toString()
+                container.wMainStr = WMAIN_LAB + it.weather?.elementAt(0)?.main;
+                container.wDescStr = WDESC_LAB + it.weather?.elementAt(0)?.description;
+                container.windStr = WIND_LAB + it.wind?.speed.toString()
+                container.ssetStr = SSET_LAB + it.sys?.sunset?.let {sunTime.format(Date(it * 1000))}
+                container.sriseStr = SRISE_LAB + it.sys?.sunrise?.let {sunTime.format(Date(it * 1000))}
+                container.timeStr = TIME_LAB + cutTime.format(Date(System.currentTimeMillis()))
+                container.name = NAME_LAB + it.name
+                container.id = it.id
             }
         }
         return container
@@ -102,6 +110,8 @@ class Repository @Inject constructor (
                 .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
 
             if (!prefs.contains(CITY_KEY)) {
+                getPerm(Manifest.permission.ACCESS_FINE_LOCATION, MainActivity.FINE_LOC_CODE)
+                getPerm(Manifest.permission.ACCESS_COARSE_LOCATION, MainActivity.COARSE_LOC_CODE)
                 if (ActivityCompat.checkSelfPermission(
                         contextHolder.getContext(),
                         Manifest.permission.ACCESS_FINE_LOCATION
@@ -110,8 +120,17 @@ class Repository @Inject constructor (
                         Manifest.permission.ACCESS_COARSE_LOCATION
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
-                    toster.makeToast("geolocation not enabled")
-                    weatherCallback?.invoke(WeatherContainer())
+                    scope.launch(Dispatchers.IO + exceptionHandler) {
+                        val mes = retrofitBuilder
+                            .getRetrofit()
+                            .create(ServerApi::class.java)
+                            .getMessage(ServerApi.getGeoRequest(0.0, 0.0))
+
+                        withContext(Dispatchers.Main) {
+                            weatherCallback?.invoke(parseMes(mes))
+                        }
+                    }
+                    return
                 }
                 LocationServices.getFusedLocationProviderClient(activityHolder.getActivity()).lastLocation.addOnSuccessListener {
                     scope.launch(Dispatchers.IO + exceptionHandler) {
@@ -182,15 +201,14 @@ class Repository @Inject constructor (
                 }
             } else {
                 val employee = Employee(intId.toLong(), container.name!!)
-                if (daoBuilder.getDAO().contains(intId).isEmpty())
-                {
-                    withContext(Dispatchers.Main) {
-                        insertCallback?.invoke(employee)
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        insertCallback?.invoke(null)
-                    }
+                val isEmpty = daoBuilder.getDAO().contains(intId).isEmpty()
+                withContext(Dispatchers.Main) {
+                    insertCallback?.invoke(
+                        when(isEmpty) {
+                            false -> null
+                            true -> employee
+                        }
+                    )
                 }
                 daoBuilder.getDAO().insert(employee)
             }

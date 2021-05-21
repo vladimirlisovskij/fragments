@@ -10,8 +10,8 @@ class Wind {
 }
 
 class Main {
-    var temp: Double? = null
-    var humidity: Long? = null
+    val temp: Double? = null
+    val humidity: Long? = null
 }
 
 class Sys {
@@ -22,7 +22,7 @@ class Sys {
 class JSONData {
     val weather: List<Weather>? = null
     val wind: Wind? = null
-    var sys: Sys? = null
+    val sys: Sys? = null
     val main: Main? = null
     val name: String? = null
     val id: String? = null

@@ -6,8 +6,8 @@ import com.example.myapplication.contextHolder.ContextHolder
 import javax.inject.Inject
 
 class Toster @Inject constructor(
-    var contextHolder: ContextHolder,
-    var activityHolder: ActivityHolder
+    private val contextHolder: ContextHolder,
+    private val activityHolder: ActivityHolder
 
 ) {
     fun makeToast(string: String) {

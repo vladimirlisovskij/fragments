@@ -1,10 +1,11 @@
 package com.example.myapplication.mainActivity
 
+import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.SystemClock.sleep
-import android.util.Log
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewTreeObserver
+import android.widget.Toast
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import com.example.myapplication.R
@@ -20,7 +21,7 @@ import moxy.presenter.InjectPresenter
 
 class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
 {
-    private lateinit var bottomView: BottomNavigationView;
+    private lateinit var bottomView: BottomNavigationView
     private lateinit var fragmentManager: FragmentManager
 
     @InjectPresenter
@@ -34,21 +35,48 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
         super.onDestroy()
     }
 
+
+    companion object {
+        const val FINE_LOC_CODE = 123
+        const val COARSE_LOC_CODE = 456
+
+        private var isStart = false
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<String>,
+                                            grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == FINE_LOC_CODE) {
+            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "fine location not enabled", Toast.LENGTH_SHORT).show()
+            }
+        } else if (requestCode == COARSE_LOC_CODE) {
+            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "coarse location not enabled", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Theme_MyApplication)
         application.registerActivityLifecycleCallbacks(InjectApplication.getInstance())
         super.onCreate(savedInstanceState)
 
-        val content: View = findViewById(android.R.id.content)
-        content.viewTreeObserver.addOnPreDrawListener(
+
+        if (!isStart) {
+            val content: View = findViewById(android.R.id.content)
+            content.viewTreeObserver.addOnPreDrawListener(
                 object : ViewTreeObserver.OnPreDrawListener {
                     override fun onPreDraw(): Boolean {
-                        sleep(3000)
+                        SystemClock.sleep(2000)
                         content.viewTreeObserver.removeOnPreDrawListener(this)
                         return true
                     }
                 }
-        )
+            )
+            isStart = true
+        }
 
         bottomView = findViewById(R.id.myMenu)
         bottomView.setOnNavigationItemSelectedListener {

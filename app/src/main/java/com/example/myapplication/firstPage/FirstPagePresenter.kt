@@ -1,6 +1,5 @@
 package com.example.myapplication.firstPage
 
-import com.example.myapplication.injectApplication.InjectApplication
 import com.example.myapplication.interactors.APIInteractor
 import leakcanary.AppWatcher
 import leakcanary.ObjectWatcher
@@ -24,10 +23,10 @@ class FirstFragmentPresenter : MvpPresenter<FirstPageView>() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
         appWatcher.expectWeaklyReachable(apiInteractor, "API INTERACTOR")
         apiInteractor.watch()
+        super.onDestroy()
     }
 
     fun refresh() {

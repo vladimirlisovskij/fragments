@@ -84,6 +84,5 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
             true -> View.VISIBLE
             false -> View.INVISIBLE
         }
-//        progressBar.visibility = state ? View.VISIBLE : View.VISIBLE
     }
 }

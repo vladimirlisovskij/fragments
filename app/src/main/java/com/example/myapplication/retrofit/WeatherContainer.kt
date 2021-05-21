@@ -1,6 +1,6 @@
 package com.example.myapplication.retrofit
 
-//TODO @Parcelize
+
 class WeatherContainer (
     var tempStr: String? = null,
     var humStr: String? = null,

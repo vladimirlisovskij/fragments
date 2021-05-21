@@ -7,7 +7,7 @@ import leakcanary.ObjectWatcher
 import javax.inject.Inject
 
 class APIInteractor @Inject constructor (
-        var repository: Repository
+        private val repository: Repository
 ) {
     fun getAll(){
         return repository.getWeather()

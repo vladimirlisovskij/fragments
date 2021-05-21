@@ -3,8 +3,6 @@ package com.example.myapplication.contextHolder
 import android.content.Context
 import dagger.Module
 import dagger.Provides
-import leakcanary.AppWatcher
-import leakcanary.ObjectWatcher
 
 class ContextHolder(
     private val context: Context

@@ -7,8 +7,6 @@ import com.example.myapplication.activityHolder.ActivityModule
 import com.example.myapplication.contextHolder.ContextModule
 import com.example.myapplication.mainComponent.DaggerMainComponent
 import com.example.myapplication.mainComponent.MainComponent
-import leakcanary.AppWatcher
-import leakcanary.ObjectWatcher
 
 class InjectApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {

@@ -7,8 +7,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.myapplication.R
 import com.example.myapplication.injectApplication.InjectApplication
 import com.example.myapplication.retrofit.WeatherContainer
-import leakcanary.AppWatcher
-import leakcanary.ObjectWatcher
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
 import moxy.presenter.ProvidePresenter
