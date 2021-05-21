@@ -48,49 +48,106 @@ class Repository @Inject constructor (
             .apply()
     }
 
-    fun getWeather() {
-        scope.launch(Dispatchers.IO + exceptionHandler) {
-            // TODO add async geolocation with callback
+    private fun parseMes(mes: Response<JSONData>) : WeatherContainer {
+        val container: WeatherContainer = WeatherContainer()
+        if (mes.isSuccessful) {
+            val jDoc = mes.body();
+            jDoc?.let {
+                container.tempStr = "temp: " + jDoc.main?.temp.toString()
+                container.humStr = "humidity: " + jDoc.main?.humidity.toString()
 
-            val curCityID = contextHolder
+                container.wMainStr = "weather: " + jDoc.weather?.elementAt(0)?.main;
+                container.wDescStr =
+                    "weather desc: " + jDoc.weather?.elementAt(0)?.description;
+
+                container.windStr = "wind speed: " + jDoc.wind?.speed.toString()
+
+                val sdf = SimpleDateFormat("h:mm a", Locale.ENGLISH)
+                sdf.timeZone = TimeZone.getTimeZone("UTC")
+
+                container.ssetStr = "sunset: " + jDoc.sys?.sunset?.let {
+                    sdf.format(Date(it * 1000))
+                }
+
+                container.sriseStr = "sunrise: " + jDoc.sys?.sunrise?.let {
+                    sdf.format(Date(it * 1000))
+                }
+
+                val formatter = SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z")
+                val date = Date(System.currentTimeMillis())
+                container.timeStr = formatter.format(date)
+
+                container.name = jDoc.name
+                container.id = jDoc.id
+            }
+        }
+        return container
+    }
+
+    fun getWeather() {
+            val prefs = contextHolder
                 .getContext()
                 .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
-                .getInt(CITY_KEY, 693805)
 
-            val mes = retrofitBuilder.getRetrofit().create(ServerApi::class.java).getMessage(ServerApi.getRequest(curCityID))
-            val container: WeatherContainer = WeatherContainer()
-            if (mes.isSuccessful) {
-                val jDoc = mes.body();
-                jDoc?.let {
-                    container.tempStr = "temp: " + jDoc.main?.temp.toString()
-                    container.humStr = "humidity: " + jDoc.main?.humidity.toString()
-
-                    container.wMainStr = "weather: " + jDoc.weather?.elementAt(0)?.main;
-                    container.wDescStr =
-                        "weather desc: " + jDoc.weather?.elementAt(0)?.description;
-
-                    container.windStr = "wind speed: " + jDoc.wind?.speed.toString()
-
-                    val sdf = SimpleDateFormat("h:mm a", Locale.ENGLISH)
-                    sdf.timeZone = TimeZone.getTimeZone("UTC")
-
-                    container.ssetStr = "sunset: " + jDoc.sys?.sunset?.let {
-                        sdf.format(Date(it * 1000))
-                    }
-
-                    container.sriseStr = "sunrise: " + jDoc.sys?.sunrise?.let {
-                        sdf.format(Date(it * 1000))
-                    }
-
-                    val formatter = SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z")
-                    val date = Date(System.currentTimeMillis())
-                    container.timeStr = formatter.format(date)
-
-                    container.name = "name: " + jDoc.name
+            if (!prefs.contains(CITY_KEY)) {
+                if (ActivityCompat.checkSelfPermission(
+                        contextHolder.getContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                        contextHolder.getContext(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return
                 }
-            }
-            withContext(Dispatchers.Main) {
-                weatherCallback?.invoke(container)
+                LocationServices.getFusedLocationProviderClient(activityHolder.getActivity()).lastLocation.addOnSuccessListener {
+                    scope.launch(Dispatchers.IO + exceptionHandler) {
+                        val mes: Response<JSONData> = if (it == null) {
+                            retrofitBuilder
+                                .getRetrofit()
+                                .create(ServerApi::class.java)
+                                .getMessage(ServerApi.getRequest(693805))
+                        } else {
+                            val lat = it.latitude
+                            val lon = it.longitude
+                            retrofitBuilder
+                                .getRetrofit()
+                                .create(ServerApi::class.java)
+                                .getMessage(ServerApi.getGeoRequest(lat, lon))
+                        }
+
+                        val container = parseMes(mes)
+                        container.id?.let {
+                            setCityId(Integer.valueOf(it))
+                            insert(it)
+                        }
+                        withContext(Dispatchers.Main) {
+                            weatherCallback?.invoke(container)
+                        }
+                    }
+                }
+            } else {
+                scope.launch(Dispatchers.IO + exceptionHandler) {
+                    val curCityID = contextHolder
+                        .getContext()
+                        .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
+                        .getInt(CITY_KEY, 693805)
+
+                    val mes = retrofitBuilder
+                        .getRetrofit()
+                        .create(ServerApi::class.java)
+                        .getMessage(ServerApi.getRequest(curCityID))
+
+                    withContext(Dispatchers.Main) {
+                        weatherCallback?.invoke(parseMes(mes))
+                    }
             }
         }
     }
