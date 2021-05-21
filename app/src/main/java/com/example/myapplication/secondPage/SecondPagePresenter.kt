@@ -2,8 +2,6 @@ package com.example.myapplication.secondPage
 
 import com.example.myapplication.interactors.APIInteractor
 import com.example.myapplication.interactors.DBInteractor
-import com.example.myapplication.toster.Toster
-import kotlinx.coroutines.*
 import moxy.InjectViewState
 import moxy.MvpPresenter
 import javax.inject.Inject
@@ -18,12 +16,18 @@ class SecondPagePresenter : MvpPresenter<SecondPageView>() {
 
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()
-        dbInteractor.setCallback {
+        dbInteractor.setGetCallback {
             viewState.setItems(it)
+            viewState.showBar(false)
+        }
+        dbInteractor.setInsertCallback {
+            it?.let { viewState.addItem(it) }
+            viewState.showBar(false)
         }
     }
 
     fun getItems() {
+        viewState.showBar(true)
         dbInteractor.getApi()
     }
 
@@ -32,6 +36,7 @@ class SecondPagePresenter : MvpPresenter<SecondPageView>() {
     }
 
     fun addItem(string: String) {
+        viewState.showBar(true)
         dbInteractor.insert(string)
     }
 }

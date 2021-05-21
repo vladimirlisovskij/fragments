@@ -13,7 +13,10 @@ interface EmployeeDAO {
 
     @Query("delete from employee where id=:id")
     fun deleteById(id: Int): Unit
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+
     fun insert(employee: Employee)
+
+    @Query("select * from employee where id=:id")
+    fun contains(id: Int) : List<Employee>
 }

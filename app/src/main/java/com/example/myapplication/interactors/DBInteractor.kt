@@ -1,6 +1,6 @@
 package com.example.myapplication.interactors
 import com.example.myapplication.repo.Repository
-import com.example.myapplication.retrofit.WeatherContainer
+import com.example.myapplication.room.Employee
 import javax.inject.Inject
 
 class DBInteractor @Inject constructor (
@@ -10,8 +10,12 @@ class DBInteractor @Inject constructor (
         return repository.getApi()
     }
 
-    fun setCallback( callBack: ((ArrayList<String>) -> Unit) ) {
+    fun setGetCallback(callBack: ((ArrayList<Employee>) -> Unit) ) {
         repository.apiCallback = callBack
+    }
+
+    fun setInsertCallback(callBack: (Employee?) -> Unit) {
+        repository.insertCallback = callBack
     }
 
     fun insert(string: String) {

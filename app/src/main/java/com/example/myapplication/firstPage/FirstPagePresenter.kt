@@ -1,8 +1,9 @@
 package com.example.myapplication.firstPage
 
+import com.example.myapplication.injectApplication.InjectApplication
 import com.example.myapplication.interactors.APIInteractor
-import com.example.myapplication.toster.Toster
-import kotlinx.coroutines.*
+import leakcanary.AppWatcher
+import leakcanary.ObjectWatcher
 import moxy.InjectViewState
 import moxy.MvpPresenter
 import javax.inject.Inject
@@ -20,6 +21,13 @@ class FirstFragmentPresenter : MvpPresenter<FirstPageView>() {
             viewState.stopRefresh()
         }
         refresh()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
+        appWatcher.expectWeaklyReachable(apiInteractor, "API INTERACTOR")
+        apiInteractor.watch()
     }
 
     fun refresh() {

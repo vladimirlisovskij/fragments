@@ -7,24 +7,31 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.room.Employee
 
 class SecondPageAdapter : RecyclerView.Adapter<SecondPageAdapter.ItemHolder>() {
     inner class ItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val cityTV: TextView = itemView.findViewById(R.id.itemTV)
+        private var employee: Employee? = null
 
-        fun setData(cityName: String) {
-            cityTV.text = cityName
+        fun setData(city: Employee) {
+            employee = city
+            cityTV.text = employee?.cityName
         }
 
         init {
-            cityTV.setOnClickListener({ onClick?.invoke(cityTV.text as String) })
+            cityTV.setOnClickListener {
+                employee?.let {
+                    onClick?.invoke(it.id.toString())
+                }
+            }
         }
     }
 
     var onClick: ( (String) -> Unit)? = null
 
-    var containerList: ArrayList<String>? = null
-        set (dataFormContainerList: ArrayList<String>?) {
+    var containerList: ArrayList<Employee>? = null
+        set (dataFormContainerList: ArrayList<Employee>?) {
             field = dataFormContainerList
             notifyDataSetChanged()
         }
@@ -44,10 +51,10 @@ class SecondPageAdapter : RecyclerView.Adapter<SecondPageAdapter.ItemHolder>() {
         }
     }
 
-    fun addItem(cityName: String) {
+    fun addItem(city: Employee) {
         containerList?.let {
             val index = it.size
-            it.add(cityName)
+            it.add(city)
             notifyItemInserted(index)
             notifyItemRangeChanged(index, it.size)
             Log.d("tag", containerList?.size.toString())

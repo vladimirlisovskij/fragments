@@ -2,16 +2,19 @@ package com.example.myapplication.mainActivity
 
 import android.os.Bundle
 import android.os.SystemClock.sleep
+import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import com.example.myapplication.R
-import com.example.myapplication.thirdPage.ThirdPageFragment
 import com.example.myapplication.firstPage.FirstPage
+import com.example.myapplication.injectApplication.InjectApplication
 import com.example.myapplication.secondPage.SecondPage
-import com.google.android.gms.location.LocationServices
+import com.example.myapplication.thirdPage.ThirdPageFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import leakcanary.AppWatcher
+import leakcanary.ObjectWatcher
 import moxy.MvpAppCompatActivity
 import moxy.presenter.InjectPresenter
 
@@ -23,8 +26,17 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
     @InjectPresenter
     lateinit var presenter: MainPresenter
 
+    override fun onDestroy() {
+        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
+        appWatcher.expectWeaklyReachable(InjectApplication.getInstance().getMainComponent(), "COMPONENT")
+        appWatcher.expectWeaklyReachable(this, "APP")
+        application.unregisterActivityLifecycleCallbacks(InjectApplication.getInstance())
+        super.onDestroy()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Theme_MyApplication)
+        application.registerActivityLifecycleCallbacks(InjectApplication.getInstance())
         super.onCreate(savedInstanceState)
 
         val content: View = findViewById(android.R.id.content)

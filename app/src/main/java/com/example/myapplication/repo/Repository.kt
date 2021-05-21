@@ -3,7 +3,6 @@ package com.example.myapplication.repo
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.LocationListener
 import androidx.core.app.ActivityCompat
 import com.example.myapplication.activityHolder.ActivityHolder
 import com.example.myapplication.contextHolder.ContextHolder
@@ -16,6 +15,8 @@ import com.example.myapplication.room.Employee
 import com.example.myapplication.toster.Toster
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.*
+import leakcanary.AppWatcher
+import leakcanary.ObjectWatcher
 import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,8 +40,19 @@ class Repository @Inject constructor (
         toster.makeToast(throwable.localizedMessage ?: "BUG")
     }
 
+    fun watch() {
+        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
+        appWatcher.expectWeaklyReachable(daoBuilder, "dao")
+        appWatcher.expectWeaklyReachable(retrofitBuilder, "retro")
+        appWatcher.expectWeaklyReachable(contextHolder, "cpntext")
+        appWatcher.expectWeaklyReachable(activityHolder, "activity")
+        appWatcher.expectWeaklyReachable(toster, "toster")
+    }
+
+
     var weatherCallback: ((WeatherContainer) -> Unit)? = null
-    var apiCallback: ((ArrayList<String>) -> Unit)? = null
+    var apiCallback: ((ArrayList<Employee>) -> Unit)? = null
+    var insertCallback: ((Employee?) -> Unit)? = null
 
     fun setCityId(id: Int){
         contextHolder.getContext().getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE).edit()
@@ -98,14 +110,8 @@ class Repository @Inject constructor (
                         Manifest.permission.ACCESS_COARSE_LOCATION
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return
+                    toster.makeToast("geolocation not enabled")
+                    weatherCallback?.invoke(WeatherContainer())
                 }
                 LocationServices.getFusedLocationProviderClient(activityHolder.getActivity()).lastLocation.addOnSuccessListener {
                     scope.launch(Dispatchers.IO + exceptionHandler) {
@@ -126,6 +132,7 @@ class Repository @Inject constructor (
                         val container = parseMes(mes)
                         container.id?.let {
                             setCityId(Integer.valueOf(it))
+                            Employee(Integer.valueOf(it).toLong(), container.name ?: "unknown")
                             insert(it)
                         }
                         withContext(Dispatchers.Main) {
@@ -154,21 +161,39 @@ class Repository @Inject constructor (
 
     fun getApi() {
         scope.launch(Dispatchers.IO + exceptionHandler) {
-            val employeeList: List<Employee> = daoBuilder.getDAO().getAll()
-            val res: ArrayList<String> = arrayListOf()
-            employeeList.forEach {
-                res.add(it.cityID)
-            }
+            val employeeList: ArrayList<Employee> = ArrayList(daoBuilder.getDAO().getAll())
             withContext(Dispatchers.Main) {
-                apiCallback?.invoke(res)
+                apiCallback?.invoke(employeeList)
             }
         }
     }
 
-    fun insert(string: String) {
+    fun insert(id: String) {
         scope.launch(Dispatchers.IO + exceptionHandler) {
-            val employee = Employee(0, string, "temp")
-            daoBuilder.getDAO().insert(employee)
+            val intId = Integer.valueOf(id)
+            val mes = retrofitBuilder
+                .getRetrofit()
+                .create(ServerApi::class.java)
+                .getMessage(ServerApi.getRequest(intId))
+            val container = parseMes(mes)
+            if (container.name == null) {
+                withContext(Dispatchers.Main) {
+                    insertCallback?.invoke(null)
+                }
+            } else {
+                val employee = Employee(intId.toLong(), container.name!!)
+                if (daoBuilder.getDAO().contains(intId).isEmpty())
+                {
+                    withContext(Dispatchers.Main) {
+                        insertCallback?.invoke(employee)
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        insertCallback?.invoke(null)
+                    }
+                }
+                daoBuilder.getDAO().insert(employee)
+            }
         }
     }
 }

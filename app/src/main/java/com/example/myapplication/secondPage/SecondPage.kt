@@ -4,15 +4,17 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
-import com.example.myapplication.activityHolder.ActivityModule
-import com.example.myapplication.contextHolder.ContextModule
+import com.example.myapplication.firstPage.FirstFragmentPresenter
+import com.example.myapplication.injectApplication.InjectApplication
 import com.example.myapplication.mainActivity.MainActivity
-import com.example.myapplication.mainComponent.DaggerMainComponent
+import com.example.myapplication.room.Employee
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
+import moxy.presenter.ProvidePresenter
 
 class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPageView {
 
@@ -20,9 +22,19 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
     private lateinit var adapter: SecondPageAdapter
     private lateinit var cityInput: EditText
     private lateinit var cityBut: Button
+    private lateinit var progressBar: ProgressBar
 
     @InjectPresenter
     lateinit var presenter: SecondPagePresenter
+
+    @ProvidePresenter
+    fun providePresenter() : FirstFragmentPresenter {
+        val res = FirstFragmentPresenter()
+        InjectApplication
+            .getInjector()
+            .inject(res)
+        return res
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -30,6 +42,7 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
         mainRecycler = view.findViewById(R.id.cityRecycler)
         cityInput = view.findViewById(R.id.sityInput)
         cityBut = view.findViewById(R.id.cityButton)
+        progressBar = view.findViewById(R.id.progressBar)
 
         adapter = SecondPageAdapter()
         mainRecycler.layoutManager = LinearLayoutManager(view.context, LinearLayoutManager.VERTICAL, false)
@@ -43,14 +56,11 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
         cityBut.setOnClickListener {
             val text: String = cityInput.text.toString()
             presenter.addItem(text)
-            adapter.addItem(text)
         }
 
-        DaggerMainComponent
-            .builder()
-            .contextModule(ContextModule(context!!))
-            .activityModule(ActivityModule(activity!!))
-            .build()
+        InjectApplication
+            .getInstance()
+            .getMainComponent()
             .inject(presenter)
 
         presenter.getItems()
@@ -61,7 +71,19 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
         fun newInstance() = SecondPage()
     }
 
-    override fun setItems(strings: ArrayList<String>) {
+    override fun setItems(strings: ArrayList<Employee>) {
         adapter.containerList = strings
+    }
+
+    override fun addItem(string: Employee) {
+        adapter.addItem(string)
+    }
+
+    override fun showBar(state: Boolean) {
+        progressBar.visibility = when(state) {
+            true -> View.VISIBLE
+            false -> View.INVISIBLE
+        }
+//        progressBar.visibility = state ? View.VISIBLE : View.VISIBLE
     }
 }
