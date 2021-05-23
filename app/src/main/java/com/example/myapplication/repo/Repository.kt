@@ -1,13 +1,7 @@
 package com.example.myapplication.repo
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.example.myapplication.activityHolder.ActivityHolder
-import com.example.myapplication.contextHolder.ContextHolder
-import com.example.myapplication.mainActivity.MainActivity
+import com.example.myapplication.injectApplication.MainApplication
 import com.example.myapplication.retrofit.JSONData
 import com.example.myapplication.retrofit.RetrofitBuilder
 import com.example.myapplication.retrofit.ServerApi
@@ -15,7 +9,6 @@ import com.example.myapplication.retrofit.WeatherContainer
 import com.example.myapplication.room.DAOBuilder
 import com.example.myapplication.room.Employee
 import com.example.myapplication.toster.Toster
-import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.*
 import leakcanary.AppWatcher
 import leakcanary.ObjectWatcher
@@ -28,8 +21,6 @@ import kotlin.collections.ArrayList
 class Repository @Inject constructor (
         private val retrofitBuilder: RetrofitBuilder,
         private val daoBuilder: DAOBuilder,
-        private val contextHolder: ContextHolder,
-        private val activityHolder: ActivityHolder,
         private val toster: Toster
 ) {
     companion object {
@@ -47,12 +38,6 @@ class Repository @Inject constructor (
         private const val NAME_LAB = ""
     }
 
-    private fun getPerm(permission: String, requestCode: Int) {
-        if (ContextCompat.checkSelfPermission(contextHolder.getContext(), permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(activityHolder.getActivity(), arrayOf(permission), requestCode)
-        }
-    }
-
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         toster.makeToast(throwable.localizedMessage ?: "BUG")
@@ -63,8 +48,6 @@ class Repository @Inject constructor (
         val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
         appWatcher.expectWeaklyReachable(daoBuilder, "dao")
         appWatcher.expectWeaklyReachable(retrofitBuilder, "retro")
-        appWatcher.expectWeaklyReachable(contextHolder, "cpntext")
-        appWatcher.expectWeaklyReachable(activityHolder, "activity")
         appWatcher.expectWeaklyReachable(toster, "toster")
     }
 
@@ -74,7 +57,7 @@ class Repository @Inject constructor (
     var insertCallback: ((Employee?) -> Unit)? = null
 
     fun setCityId(id: Int){
-        contextHolder.getContext().getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE).edit()
+        MainApplication.getInstance().getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE).edit()
             .putInt(CITY_KEY, id)
             .apply()
     }
@@ -105,48 +88,17 @@ class Repository @Inject constructor (
     }
 
     fun getWeather() {
-            val prefs = contextHolder
-                .getContext()
+            val prefs = MainApplication
+                .getInstance()
                 .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
 
             if (!prefs.contains(CITY_KEY)) {
-                getPerm(Manifest.permission.ACCESS_FINE_LOCATION, MainActivity.FINE_LOC_CODE)
-                getPerm(Manifest.permission.ACCESS_COARSE_LOCATION, MainActivity.COARSE_LOC_CODE)
-                if (ActivityCompat.checkSelfPermission(
-                        contextHolder.getContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                        contextHolder.getContext(),
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
+                MainApplication.getInstance().getLastLocation { lat, lon ->
                     scope.launch(Dispatchers.IO + exceptionHandler) {
-                        val mes = retrofitBuilder
+                        val mes: Response<JSONData> = retrofitBuilder
                             .getRetrofit()
                             .create(ServerApi::class.java)
-                            .getMessage(ServerApi.getGeoRequest(0.0, 0.0))
-
-                        withContext(Dispatchers.Main) {
-                            weatherCallback?.invoke(parseMes(mes))
-                        }
-                    }
-                    return
-                }
-                LocationServices.getFusedLocationProviderClient(activityHolder.getActivity()).lastLocation.addOnSuccessListener {
-                    scope.launch(Dispatchers.IO + exceptionHandler) {
-                        val mes: Response<JSONData> = if (it == null) {
-                            retrofitBuilder
-                                .getRetrofit()
-                                .create(ServerApi::class.java)
-                                .getMessage(ServerApi.getGeoRequest(0.0, 0.0))
-                        } else {
-                            val lat = it.latitude
-                            val lon = it.longitude
-                            retrofitBuilder
-                                .getRetrofit()
-                                .create(ServerApi::class.java)
-                                .getMessage(ServerApi.getGeoRequest(lat, lon))
-                        }
+                            .getMessage(ServerApi.getGeoRequest(lat, lon))
 
                         val container = parseMes(mes)
                         container.id?.let {
@@ -161,8 +113,8 @@ class Repository @Inject constructor (
                 }
             } else {
                 scope.launch(Dispatchers.IO + exceptionHandler) {
-                    val curCityID = contextHolder
-                        .getContext()
+                    val curCityID = MainApplication
+                        .getInstance()
                         .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
                         .getInt(CITY_KEY, 6295630)
 

@@ -5,11 +5,14 @@ import android.view.View
 import android.widget.TextView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.myapplication.R
-import com.example.myapplication.injectApplication.InjectApplication
+import com.example.myapplication.mainComponent.DaggerMainComponent
 import com.example.myapplication.retrofit.WeatherContainer
 import moxy.MvpAppCompatFragment
+import moxy.ktx.moxyPresenter
 import moxy.presenter.InjectPresenter
 import moxy.presenter.ProvidePresenter
+import javax.inject.Inject
+import javax.inject.Provider
 
 
 class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageView {
@@ -24,16 +27,19 @@ class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageV
     private lateinit var nameTV: TextView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
+
+//    @Inject
+//    lateinit var presenterProvider: Provider<FirstFragmentPresenter>
+//    private val presenter by moxyPresenter { presenterProvider.get() }
+
     @InjectPresenter
     lateinit var presenter: FirstFragmentPresenter
 
     @ProvidePresenter
-    fun providePresenter() : FirstFragmentPresenter {
-        val res = FirstFragmentPresenter()
-        InjectApplication
-            .getInjector()
-            .inject(res)
-        return res
+    fun providePresenter(): FirstFragmentPresenter {
+        return DaggerMainComponent
+            .create()
+            .getFirstPresenter()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

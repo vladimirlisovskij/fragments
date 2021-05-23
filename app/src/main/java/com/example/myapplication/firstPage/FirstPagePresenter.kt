@@ -8,10 +8,10 @@ import moxy.MvpPresenter
 import javax.inject.Inject
 
 @InjectViewState
-class FirstFragmentPresenter : MvpPresenter<FirstPageView>() {
+class FirstFragmentPresenter @Inject constructor(
+    private val apiInteractor: APIInteractor
+): MvpPresenter<FirstPageView>() {
 
-    @Inject
-    lateinit var apiInteractor: APIInteractor
 
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()

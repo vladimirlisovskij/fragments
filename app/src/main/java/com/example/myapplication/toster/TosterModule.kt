@@ -1,20 +1,15 @@
 package com.example.myapplication.toster
 
+import android.os.Handler
 import android.widget.Toast
-import com.example.myapplication.activityHolder.ActivityHolder
-import com.example.myapplication.contextHolder.ContextHolder
+import com.example.myapplication.injectApplication.MainApplication
 import javax.inject.Inject
 
-class Toster @Inject constructor(
-    private val contextHolder: ContextHolder,
-    private val activityHolder: ActivityHolder
-
-) {
+class Toster @Inject constructor() {
+    private val handler =  Handler(MainApplication.getInstance().mainLooper)
     fun makeToast(string: String) {
-        activityHolder.getActivity().runOnUiThread(
-            Runnable {
-                Toast.makeText(contextHolder.getContext(), string, Toast.LENGTH_SHORT).show()
-            }
-        )
+        handler.post {
+            Toast.makeText(MainApplication.getInstance(), string, Toast.LENGTH_SHORT).show()
+        }
     }
 }

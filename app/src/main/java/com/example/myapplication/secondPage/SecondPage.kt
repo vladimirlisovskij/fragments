@@ -8,9 +8,8 @@ import android.widget.ProgressBar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
-import com.example.myapplication.firstPage.FirstFragmentPresenter
-import com.example.myapplication.injectApplication.InjectApplication
 import com.example.myapplication.mainActivity.MainActivity
+import com.example.myapplication.mainComponent.DaggerMainComponent
 import com.example.myapplication.room.Employee
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
@@ -28,12 +27,10 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
     lateinit var presenter: SecondPagePresenter
 
     @ProvidePresenter
-    fun providePresenter() : FirstFragmentPresenter {
-        val res = FirstFragmentPresenter()
-        InjectApplication
-            .getInjector()
-            .inject(res)
-        return res
+    fun providePresenter(): SecondPagePresenter {
+        return DaggerMainComponent
+            .create()
+            .getSecondPresenter()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -57,11 +54,6 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
             val text: String = cityInput.text.toString()
             presenter.addItem(text)
         }
-
-        InjectApplication
-            .getInstance()
-            .getMainComponent()
-            .inject(presenter)
 
         presenter.getItems()
     }

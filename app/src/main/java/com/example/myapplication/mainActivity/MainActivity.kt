@@ -1,18 +1,22 @@
 package com.example.myapplication.mainActivity
 
+import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewTreeObserver
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import com.example.myapplication.R
 import com.example.myapplication.firstPage.FirstPage
-import com.example.myapplication.injectApplication.InjectApplication
+import com.example.myapplication.injectApplication.MainApplication
 import com.example.myapplication.secondPage.SecondPage
 import com.example.myapplication.thirdPage.ThirdPageFragment
+import com.google.android.gms.location.LocationServices
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import leakcanary.AppWatcher
 import leakcanary.ObjectWatcher
@@ -27,20 +31,40 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
     @InjectPresenter
     lateinit var presenter: MainPresenter
 
-    override fun onDestroy() {
-        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
-        appWatcher.expectWeaklyReachable(InjectApplication.getInstance().getMainComponent(), "COMPONENT")
-        appWatcher.expectWeaklyReachable(this, "APP")
-        application.unregisterActivityLifecycleCallbacks(InjectApplication.getInstance())
-        super.onDestroy()
-    }
-
-
     companion object {
-        const val FINE_LOC_CODE = 123
-        const val COARSE_LOC_CODE = 456
+        private const val FINE_LOC_CODE = 123
+        private const val COARSE_LOC_CODE = 456
 
         private var isStart = false
+    }
+
+    fun getLastLocation(callBack: ( (lat: Double, lon: Double) -> Unit) ) {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            callBack.invoke(0.0,0.0)
+            return
+        }
+        LocationServices
+            .getFusedLocationProviderClient(this)
+            .lastLocation.addOnSuccessListener {
+                if (it == null) {
+                    callBack.invoke(0.0,0.0)
+                } else {
+                    callBack.invoke(it.latitude, it.longitude)
+                }
+        }
+    }
+
+    fun getPerm(permission: String, requestCode: Int) {
+        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
@@ -60,9 +84,11 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Theme_MyApplication)
-        application.registerActivityLifecycleCallbacks(InjectApplication.getInstance())
+        application.registerActivityLifecycleCallbacks(MainApplication.getInstance())
         super.onCreate(savedInstanceState)
 
+        getPerm(Manifest.permission.ACCESS_FINE_LOCATION, FINE_LOC_CODE)
+        getPerm(Manifest.permission.ACCESS_COARSE_LOCATION, COARSE_LOC_CODE)
 
         if (!isStart) {
             val content: View = findViewById(android.R.id.content)
@@ -100,6 +126,13 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
         }
 
         fragmentManager = supportFragmentManager
+    }
+
+    override fun onDestroy() {
+        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
+        appWatcher.expectWeaklyReachable(this, "APP")
+        super.onDestroy()
+        application.unregisterActivityLifecycleCallbacks(MainApplication.getInstance())
     }
 
     fun toFirst() {

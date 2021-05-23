@@ -9,12 +9,10 @@ import moxy.MvpPresenter
 import javax.inject.Inject
 
 @InjectViewState
-class SecondPagePresenter : MvpPresenter<SecondPageView>() {
-    @Inject
-    lateinit var dbInteractor: DBInteractor
-
-    @Inject
-    lateinit var apiInteractor: APIInteractor
+class SecondPagePresenter@Inject constructor(
+    private val apiInteractor: APIInteractor,
+    private val dbInteractor: DBInteractor
+) : MvpPresenter<SecondPageView>() {
 
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()
