@@ -1,5 +1,6 @@
 package com.example.myapplication.firstPage
 
+import com.example.myapplication.injectApplication.MainApplication
 import com.example.myapplication.interactors.APIInteractor
 import leakcanary.AppWatcher
 import leakcanary.ObjectWatcher
@@ -11,13 +12,17 @@ import javax.inject.Inject
 class FirstFragmentPresenter @Inject constructor(
     private val apiInteractor: APIInteractor
 ): MvpPresenter<FirstPageView>() {
-
-
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()
         apiInteractor.setCallback {
             viewState.setInfo(it)
             viewState.stopRefresh()
+        }
+        apiInteractor.setLocationCallback {
+            MainApplication.getInstance().getLastLocation(apiInteractor.getLocationCallback())
+        }
+        apiInteractor.setToastCallback { str ->
+            MainApplication.getInstance().makeToast(str)
         }
         refresh()
     }

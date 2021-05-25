@@ -5,17 +5,20 @@ import android.view.View
 import android.widget.TextView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.myapplication.R
-import com.example.myapplication.mainComponent.DaggerMainComponent
+import com.example.myapplication.injectApplication.MainApplication
 import com.example.myapplication.retrofit.WeatherContainer
 import moxy.MvpAppCompatFragment
 import moxy.ktx.moxyPresenter
-import moxy.presenter.InjectPresenter
-import moxy.presenter.ProvidePresenter
 import javax.inject.Inject
 import javax.inject.Provider
 
 
 class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageView {
+    companion object {
+        @JvmStatic
+        fun newInstance() = FirstPage()
+    }
+
     private lateinit var tempTV: TextView
     private lateinit var humTV: TextView
     private lateinit var wMain: TextView
@@ -27,19 +30,16 @@ class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageV
     private lateinit var nameTV: TextView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
+    @Inject
+    lateinit var presenterProvider: Provider<FirstFragmentPresenter>
+    private val presenter by moxyPresenter { presenterProvider.get() }
 
-//    @Inject
-//    lateinit var presenterProvider: Provider<FirstFragmentPresenter>
-//    private val presenter by moxyPresenter { presenterProvider.get() }
-
-    @InjectPresenter
-    lateinit var presenter: FirstFragmentPresenter
-
-    @ProvidePresenter
-    fun providePresenter(): FirstFragmentPresenter {
-        return DaggerMainComponent
-            .create()
-            .getFirstPresenter()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        MainApplication
+            .getInstance()
+            .getComponent()
+            .inject(this)
+        super.onCreate(savedInstanceState)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -58,7 +58,6 @@ class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageV
         swipeRefreshLayout.setOnRefreshListener {
             presenter.refresh()
         }
-
     }
 
     override fun setInfo(container: WeatherContainer) {
@@ -79,10 +78,5 @@ class FirstPage : MvpAppCompatFragment(R.layout.fragment_first_page), FirstPageV
 
     override fun stopRefresh() {
         swipeRefreshLayout.isRefreshing = false
-    }
-
-    companion object {
-        @JvmStatic
-        fun newInstance() = FirstPage()
     }
 }

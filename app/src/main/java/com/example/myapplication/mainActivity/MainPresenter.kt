@@ -5,8 +5,7 @@ import moxy.MvpPresenter
 
 @InjectViewState
 class MainPresenter : MvpPresenter<MainView>() {
-    override fun onFirstViewAttach() {
-        super.onFirstViewAttach()
+    fun iSReady() {
         viewState.showFirstPage()
     }
 

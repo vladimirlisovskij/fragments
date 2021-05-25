@@ -1,5 +1,6 @@
 package com.example.myapplication.secondPage
 
+import com.example.myapplication.injectApplication.MainApplication
 import com.example.myapplication.interactors.APIInteractor
 import com.example.myapplication.interactors.DBInteractor
 import leakcanary.AppWatcher
@@ -13,7 +14,6 @@ class SecondPagePresenter@Inject constructor(
     private val apiInteractor: APIInteractor,
     private val dbInteractor: DBInteractor
 ) : MvpPresenter<SecondPageView>() {
-
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()
         dbInteractor.setGetCallback {
@@ -23,6 +23,12 @@ class SecondPagePresenter@Inject constructor(
         dbInteractor.setInsertCallback {
             it?.let { viewState.addItem(it) }
             viewState.showBar(false)
+        }
+        dbInteractor.setToastCallback { str ->
+            MainApplication.getInstance().makeToast(str)
+        }
+        apiInteractor.setToastCallback { str ->
+            MainApplication.getInstance().makeToast(str)
         }
     }
 

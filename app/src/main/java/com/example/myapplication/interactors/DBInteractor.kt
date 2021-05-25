@@ -6,10 +6,14 @@ import leakcanary.ObjectWatcher
 import javax.inject.Inject
 
 class DBInteractor @Inject constructor (
-        private val repository: Repository
+    private val repository: Repository
 ) {
     fun getApi() {
         return repository.getApi()
+    }
+
+    fun setToastCallback(callBack: (String) -> Unit){
+        repository.toastCallback = callBack
     }
 
     fun setGetCallback(callBack: ((ArrayList<Employee>) -> Unit) ) {

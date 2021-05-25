@@ -2,8 +2,8 @@ package com.example.myapplication.mainActivity
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
-import android.os.SystemClock
 import android.view.View
 import android.view.ViewTreeObserver
 import android.widget.Toast
@@ -25,20 +25,22 @@ import moxy.presenter.InjectPresenter
 
 class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
 {
+    companion object {
+        private const val FINE_LOC_CODE = 123
+
+        private var isStart = false
+    }
+
+    private var isFineGranted = false
+    private var isResponse = true
+
     private lateinit var bottomView: BottomNavigationView
     private lateinit var fragmentManager: FragmentManager
 
     @InjectPresenter
     lateinit var presenter: MainPresenter
 
-    companion object {
-        private const val FINE_LOC_CODE = 123
-        private const val COARSE_LOC_CODE = 456
-
-        private var isStart = false
-    }
-
-    fun getLastLocation(callBack: ( (lat: Double, lon: Double) -> Unit) ) {
+    fun getLastLocation(callBack: ( (Location?) -> Unit) ) {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -47,23 +49,20 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            callBack.invoke(0.0,0.0)
+            callBack.invoke(null)
             return
         }
         LocationServices
             .getFusedLocationProviderClient(this)
-            .lastLocation.addOnSuccessListener {
-                if (it == null) {
-                    callBack.invoke(0.0,0.0)
-                } else {
-                    callBack.invoke(it.latitude, it.longitude)
-                }
-        }
+            .lastLocation.addOnSuccessListener(callBack)
     }
 
-    fun getPerm(permission: String, requestCode: Int) {
+    fun getPermissions(permission: String, requestCode: Int) {
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
+            ActivityCompat.requestPermissions(this, arrayOf(permission, Manifest.permission.ACCESS_COARSE_LOCATION), requestCode)
+        } else {
+            isResponse = true
+            isFineGranted = true
         }
     }
 
@@ -73,11 +72,13 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == FINE_LOC_CODE) {
             if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                isResponse = true
+                isFineGranted = false
                 Toast.makeText(this, "fine location not enabled", Toast.LENGTH_SHORT).show()
-            }
-        } else if (requestCode == COARSE_LOC_CODE) {
-            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "coarse location not enabled", Toast.LENGTH_SHORT).show()
+            } else if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "fine location granted", Toast.LENGTH_SHORT).show()
+                isResponse = true
+                isFineGranted = true
             }
         }
     }
@@ -87,17 +88,26 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
         application.registerActivityLifecycleCallbacks(MainApplication.getInstance())
         super.onCreate(savedInstanceState)
 
-        getPerm(Manifest.permission.ACCESS_FINE_LOCATION, FINE_LOC_CODE)
-        getPerm(Manifest.permission.ACCESS_COARSE_LOCATION, COARSE_LOC_CODE)
-
         if (!isStart) {
             val content: View = findViewById(android.R.id.content)
             content.viewTreeObserver.addOnPreDrawListener(
                 object : ViewTreeObserver.OnPreDrawListener {
                     override fun onPreDraw(): Boolean {
-                        SystemClock.sleep(2000)
-                        content.viewTreeObserver.removeOnPreDrawListener(this)
-                        return true
+                        return if (isFineGranted) {
+                            content.viewTreeObserver.removeOnPreDrawListener(this)
+                            presenter.iSReady()
+                            true
+                        } else {
+                            if (isResponse) {
+                                isResponse = false
+                                getPermissions(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    FINE_LOC_CODE
+                                )
+
+                            }
+                            false
+                        }
                     }
                 }
             )
@@ -136,7 +146,6 @@ class MainActivity : MvpAppCompatActivity(R.layout.activity_main), MainView
     }
 
     fun toFirst() {
-        presenter.toFirst()
         bottomView.selectedItemId = R.id.page_1
     }
 

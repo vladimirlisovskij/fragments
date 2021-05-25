@@ -7,7 +7,6 @@ import androidx.room.Query
 
 @Dao
 interface EmployeeDAO {
-
     @Query("select * from employee")
     fun getAll(): List<Employee>
 

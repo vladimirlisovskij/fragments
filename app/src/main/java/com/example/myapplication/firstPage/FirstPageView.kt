@@ -6,7 +6,7 @@ import moxy.viewstate.strategy.alias.SingleState
 import moxy.viewstate.strategy.alias.Skip
 
 interface FirstPageView : MvpView {
-    @SingleState // SingleStateStrategy - добавить и отчистить очередь
+    @SingleState
     fun setInfo(container: WeatherContainer)
 
     @Skip

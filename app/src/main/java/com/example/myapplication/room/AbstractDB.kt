@@ -14,6 +14,7 @@ abstract class AbstractDB : RoomDatabase() {
 
         private var instance: AbstractDB? = null
 
+        @JvmStatic
         fun getDB(context: Context): AbstractDB {
             instance = Room.databaseBuilder(context.applicationContext, AbstractDB::class.java, DB_NAME)
                     .build()

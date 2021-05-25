@@ -8,14 +8,19 @@ import android.widget.ProgressBar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.injectApplication.MainApplication
 import com.example.myapplication.mainActivity.MainActivity
-import com.example.myapplication.mainComponent.DaggerMainComponent
 import com.example.myapplication.room.Employee
 import moxy.MvpAppCompatFragment
-import moxy.presenter.InjectPresenter
-import moxy.presenter.ProvidePresenter
+import moxy.ktx.moxyPresenter
+import javax.inject.Inject
+import javax.inject.Provider
 
 class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPageView {
+    companion object {
+        @JvmStatic
+        fun newInstance() = SecondPage()
+    }
 
     private lateinit var mainRecycler: RecyclerView
     private lateinit var adapter: SecondPageAdapter
@@ -23,14 +28,16 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
     private lateinit var cityBut: Button
     private lateinit var progressBar: ProgressBar
 
-    @InjectPresenter
-    lateinit var presenter: SecondPagePresenter
+    @Inject
+    lateinit var presenterProvider: Provider<SecondPagePresenter>
+    private val presenter by moxyPresenter { presenterProvider.get() }
 
-    @ProvidePresenter
-    fun providePresenter(): SecondPagePresenter {
-        return DaggerMainComponent
-            .create()
-            .getSecondPresenter()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        MainApplication
+            .getInstance()
+            .getComponent()
+            .inject(this)
+        super.onCreate(savedInstanceState)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -56,11 +63,6 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
         }
 
         presenter.getItems()
-    }
-
-    companion object {
-        @JvmStatic
-        fun newInstance() = SecondPage()
     }
 
     override fun setItems(strings: ArrayList<Employee>) {

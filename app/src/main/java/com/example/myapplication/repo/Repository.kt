@@ -1,6 +1,8 @@
 package com.example.myapplication.repo
 
 import android.content.Context
+import android.location.Location
+import android.os.Handler
 import com.example.myapplication.injectApplication.MainApplication
 import com.example.myapplication.retrofit.JSONData
 import com.example.myapplication.retrofit.RetrofitBuilder
@@ -8,7 +10,6 @@ import com.example.myapplication.retrofit.ServerApi
 import com.example.myapplication.retrofit.WeatherContainer
 import com.example.myapplication.room.DAOBuilder
 import com.example.myapplication.room.Employee
-import com.example.myapplication.toster.Toster
 import kotlinx.coroutines.*
 import leakcanary.AppWatcher
 import leakcanary.ObjectWatcher
@@ -20,8 +21,7 @@ import kotlin.collections.ArrayList
 
 class Repository @Inject constructor (
         private val retrofitBuilder: RetrofitBuilder,
-        private val daoBuilder: DAOBuilder,
-        private val toster: Toster
+        private val daoBuilder: DAOBuilder
 ) {
     companion object {
         private const val PREF_KEY = "repo.prefKey"
@@ -38,23 +38,37 @@ class Repository @Inject constructor (
         private const val NAME_LAB = ""
     }
 
+    var weatherCallback: ((WeatherContainer) -> Unit)? = null
+    var apiCallback: ((ArrayList<Employee>) -> Unit)? = null
+    var insertCallback: ((Employee?) -> Unit)? = null
+    var locationCallback: (() -> Unit)? = null
+    var toastCallback: ((String) -> Unit)? = null
+
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
-    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        toster.makeToast(throwable.localizedMessage ?: "BUG")
+
+    private val apiHandler = CoroutineExceptionHandler { _, throwable ->
+        toastCallback?.invoke(throwable.localizedMessage ?: "BUG")
     }
 
+    private val weatherExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        toastCallback?.invoke(throwable.localizedMessage ?: "BUG")
+        Handler(MainApplication.getInstance().mainLooper).post {
+            weatherCallback?.invoke(WeatherContainer())
+        }
+    }
+
+    private val insertExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        toastCallback?.invoke(throwable.localizedMessage ?: "BUG")
+        Handler(MainApplication.getInstance().mainLooper).post {
+            insertCallback?.invoke(null)
+        }
+    }
 
     fun watch() {
         val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
         appWatcher.expectWeaklyReachable(daoBuilder, "dao")
         appWatcher.expectWeaklyReachable(retrofitBuilder, "retro")
-        appWatcher.expectWeaklyReachable(toster, "toster")
     }
-
-
-    var weatherCallback: ((WeatherContainer) -> Unit)? = null
-    var apiCallback: ((ArrayList<Employee>) -> Unit)? = null
-    var insertCallback: ((Employee?) -> Unit)? = null
 
     fun setCityId(id: Int){
         MainApplication.getInstance().getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE).edit()
@@ -65,7 +79,7 @@ class Repository @Inject constructor (
     private fun parseMes(mes: Response<JSONData>) : WeatherContainer {
         val container = WeatherContainer()
         if (mes.isSuccessful) {
-            val jDoc = mes.body();
+            val jDoc = mes.body()
             jDoc?.let {
                 val sunTime = SimpleDateFormat("h:mm a", Locale.ENGLISH)
                 sunTime.timeZone = TimeZone.getTimeZone("UTC")
@@ -74,11 +88,11 @@ class Repository @Inject constructor (
 
                 container.tempStr = TEMP_LAB + it.main?.temp.toString()
                 container.humStr = HUM_LAB + it.main?.humidity.toString()
-                container.wMainStr = WMAIN_LAB + it.weather?.elementAt(0)?.main;
-                container.wDescStr = WDESC_LAB + it.weather?.elementAt(0)?.description;
+                container.wMainStr = WMAIN_LAB + it.weather?.elementAt(0)?.main
+                container.wDescStr = WDESC_LAB + it.weather?.elementAt(0)?.description
                 container.windStr = WIND_LAB + it.wind?.speed.toString()
-                container.ssetStr = SSET_LAB + it.sys?.sunset?.let {sunTime.format(Date(it * 1000))}
-                container.sriseStr = SRISE_LAB + it.sys?.sunrise?.let {sunTime.format(Date(it * 1000))}
+                container.ssetStr = SSET_LAB + it.sys?.sunset?.let { sunset -> sunTime.format(Date(sunset * 1000))}
+                container.sriseStr = SRISE_LAB + it.sys?.sunrise?.let { sunrise -> sunTime.format(Date(sunrise * 1000))}
                 container.timeStr = TIME_LAB + cutTime.format(Date(System.currentTimeMillis()))
                 container.name = NAME_LAB + it.name
                 container.id = it.id
@@ -87,51 +101,55 @@ class Repository @Inject constructor (
         return container
     }
 
+    fun setLocation(location: Location?) {
+        val lat = location?.latitude ?: 0.0
+        val lon = location?.longitude ?: 0.0
+        scope.launch(Dispatchers.IO + weatherExceptionHandler) {
+            val mes: Response<JSONData> = retrofitBuilder
+                .getRetrofit()
+                .create(ServerApi::class.java)
+                .getMessage(ServerApi.getGeoRequest(lat, lon))
+
+            val container = parseMes(mes)
+            container.id?.let {
+                setCityId(Integer.valueOf(it))
+                Employee(Integer.valueOf(it).toLong(), container.name ?: "unknown")
+                insert(it)
+            }
+            withContext(Dispatchers.Main) {
+                weatherCallback?.invoke(container)
+            }
+        }
+    }
+
     fun getWeather() {
-            val prefs = MainApplication
-                .getInstance()
-                .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
+        val prefs = MainApplication
+            .getInstance()
+            .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
 
-            if (!prefs.contains(CITY_KEY)) {
-                MainApplication.getInstance().getLastLocation { lat, lon ->
-                    scope.launch(Dispatchers.IO + exceptionHandler) {
-                        val mes: Response<JSONData> = retrofitBuilder
-                            .getRetrofit()
-                            .create(ServerApi::class.java)
-                            .getMessage(ServerApi.getGeoRequest(lat, lon))
+        if (!prefs.contains(CITY_KEY)) {
+            locationCallback?.invoke()
+        } else {
+            scope.launch(Dispatchers.IO + weatherExceptionHandler) {
+                val curCityID = MainApplication
+                    .getInstance()
+                    .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
+                    .getInt(CITY_KEY, 6295630)
 
-                        val container = parseMes(mes)
-                        container.id?.let {
-                            setCityId(Integer.valueOf(it))
-                            Employee(Integer.valueOf(it).toLong(), container.name ?: "unknown")
-                            insert(it)
-                        }
-                        withContext(Dispatchers.Main) {
-                            weatherCallback?.invoke(container)
-                        }
-                    }
+                val mes = retrofitBuilder
+                    .getRetrofit()
+                    .create(ServerApi::class.java)
+                    .getMessage(ServerApi.getRequest(curCityID))
+
+                withContext(Dispatchers.Main) {
+                    weatherCallback?.invoke(parseMes(mes))
                 }
-            } else {
-                scope.launch(Dispatchers.IO + exceptionHandler) {
-                    val curCityID = MainApplication
-                        .getInstance()
-                        .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
-                        .getInt(CITY_KEY, 6295630)
-
-                    val mes = retrofitBuilder
-                        .getRetrofit()
-                        .create(ServerApi::class.java)
-                        .getMessage(ServerApi.getRequest(curCityID))
-
-                    withContext(Dispatchers.Main) {
-                        weatherCallback?.invoke(parseMes(mes))
-                    }
             }
         }
     }
 
     fun getApi() {
-        scope.launch(Dispatchers.IO + exceptionHandler) {
+        scope.launch(Dispatchers.IO + apiHandler) {
             val employeeList: ArrayList<Employee> = ArrayList(daoBuilder.getDAO().getAll())
             withContext(Dispatchers.Main) {
                 apiCallback?.invoke(employeeList)
@@ -140,7 +158,7 @@ class Repository @Inject constructor (
     }
 
     fun insert(id: String) {
-        scope.launch(Dispatchers.IO + exceptionHandler) {
+        scope.launch(Dispatchers.IO + insertExceptionHandler) {
             val intId = Integer.valueOf(id)
             val mes = retrofitBuilder
                 .getRetrofit()
