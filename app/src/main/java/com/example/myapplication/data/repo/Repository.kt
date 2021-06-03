@@ -3,11 +3,10 @@ package com.example.myapplication.data.repo
 import android.content.Context
 import android.location.Location
 import android.os.Handler
-import com.example.myapplication.data.ktor.KtorBuilder
 import com.example.myapplication.data.ktor.JSONData
+import com.example.myapplication.data.ktor.KtorBuilder
 import com.example.myapplication.data.ktor.WeatherContainer
-import com.example.myapplication.data.room.DAOBuilder
-import com.example.myapplication.data.room.Employee
+import com.example.myapplication.data.sqlite.SQLiteModule
 import com.example.myapplication.domain.interactors.api.APIRepo
 import com.example.myapplication.domain.interactors.database.DBRepo
 import com.example.myapplication.presenter.injectApplication.MainApplication
@@ -19,7 +18,7 @@ import kotlin.collections.ArrayList
 
 class Repository @Inject constructor (
     private val ktorBuilder: KtorBuilder,
-    private val daoBuilder: DAOBuilder
+    private val sqLiteModule: SQLiteModule
 )   : APIRepo
     , DBRepo
 {
@@ -38,11 +37,11 @@ class Repository @Inject constructor (
         private const val NAME_LAB = ""
     }
 
-    var weatherCB: ((WeatherContainer) -> Unit)? = null
-    var apiCB: ((ArrayList<Employee>) -> Unit)? = null
-    var insertCB: ((Employee?) -> Unit)? = null
-    var locationCB: (() -> Unit)? = null
-    var toastCB: ((String) -> Unit)? = null
+    private var weatherCB: ((WeatherContainer) -> Unit)? = null
+    private var apiCB: ((ArrayList<SQLiteModule.City>) -> Unit)? = null
+    private var insertCB: ((SQLiteModule.City?) -> Unit)? = null
+    private var locationCB: (() -> Unit)? = null
+    private var toastCB: ((String) -> Unit)? = null
 
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
 
@@ -74,11 +73,11 @@ class Repository @Inject constructor (
         toastCB = callBack
     }
 
-    override fun setGetCallback(callBack: (ArrayList<Employee>) -> Unit) {
+    override fun setGetCallback(callBack: (ArrayList<SQLiteModule.City>) -> Unit) {
         apiCB = callBack
     }
 
-    override fun setInsertCallback(callBack: (Employee?) -> Unit) {
+    override fun setInsertCallback(callBack: (SQLiteModule.City?) -> Unit) {
         insertCB = callBack
     }
 
@@ -120,10 +119,10 @@ class Repository @Inject constructor (
         val lat = location?.latitude ?: 0.0
         val lon = location?.longitude ?: 0.0
         scope.launch(Dispatchers.IO + weatherExceptionHandler) {
-            val container = parseMes(ktorBuilder.getGeoRequst(lat, lon))
+            val container = parseMes(ktorBuilder.getGeoRequest(lat, lon))
             container.id?.let {
                 setCityId(Integer.valueOf(it))
-                Employee(Integer.valueOf(it).toLong(), container.name ?: "unknown")
+                SQLiteModule.City(Integer.valueOf(it), container.name ?: "unknown")
                 insert(it)
             }
             withContext(Dispatchers.Main) {
@@ -155,9 +154,9 @@ class Repository @Inject constructor (
 
     override fun getApi() {
         scope.launch(Dispatchers.IO + apiHandler) {
-            val employeeList: ArrayList<Employee> = ArrayList(daoBuilder.getDAO().getAll())
+            val cityList: ArrayList<SQLiteModule.City> = sqLiteModule.getAll()
             withContext(Dispatchers.Main) {
-                apiCB?.invoke(employeeList)
+                apiCB?.invoke(cityList)
             }
         }
     }
@@ -171,17 +170,17 @@ class Repository @Inject constructor (
                     insertCB?.invoke(null)
                 }
             } else {
-                val employee = Employee(intId.toLong(), container.name!!)
-                val isEmpty = daoBuilder.getDAO().contains(intId).isEmpty()
+                val city = SQLiteModule.City(intId, container.name!!)
+                val notEmpty = sqLiteModule.contains(intId)
                 withContext(Dispatchers.Main) {
                     insertCB?.invoke(
-                        when(isEmpty) {
-                            false -> null
-                            true -> employee
+                        when(notEmpty) {
+                            true -> null
+                            false-> city
                         }
                     )
                 }
-                daoBuilder.getDAO().insert(employee)
+                sqLiteModule.insert(intId, container.name!!)
             }
         }
     }

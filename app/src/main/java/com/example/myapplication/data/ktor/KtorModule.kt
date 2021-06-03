@@ -8,28 +8,15 @@ import javax.inject.Inject
 
 class KtorBuilder @Inject constructor() {
     private companion object Urls {
-        const val BASE_URL = "https://api.openweathermap.org/data/2.5"
-
-        fun getIDRef(id: Int): String {
-            return "weather" + // текущая погода
-                    "?id=" + id.toString() +
-                    "&units=metric" + // градусы Цельсия
-                    "&appid=30796e96fd16433e49bdf7b5fd4ac746"
-        }
-
-        fun getGeoRef(lat: Double, lon: Double): String {
-            return "weather" + // текущая погода
-                    "?lat=" + lat.toString() +
-                    "&lon=" + lon.toString() +
-                    "&units=metric" + // градусы Цельсия
-                    "&appid=30796e96fd16433e49bdf7b5fd4ac746"
-        }
+        const val BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+        const val KEY = "30796e96fd16433e49bdf7b5fd4ac746"
     }
 
     private val ktor = HttpClient(Android) {
         install(JsonFeature) {
             serializer = GsonSerializer()
         }
+
         engine {
             connectTimeout = 30_000
             socketTimeout = 10_000
@@ -37,10 +24,19 @@ class KtorBuilder @Inject constructor() {
     }
 
     suspend fun getIDRequest(id: Int) : JSONData {
-        return ktor.request("${BASE_URL}/${getIDRef(id)}")
+        return ktor.get(BASE_URL) {
+            parameter("id", id)
+            parameter("units", "metric")
+            parameter("appid", KEY)
+        }
     }
 
-    suspend fun getGeoRequst(lat: Double, lon: Double) : JSONData {
-        return ktor.request("${BASE_URL}/${getGeoRef(lat, lon)}")
+    suspend fun getGeoRequest(lat: Double, lon: Double) : JSONData {
+        return ktor.get(BASE_URL) {
+            parameter("lat", lat)
+            parameter("lon", lon)
+            parameter("units", "metric")
+            parameter("appid", KEY)
+        }
     }
 }

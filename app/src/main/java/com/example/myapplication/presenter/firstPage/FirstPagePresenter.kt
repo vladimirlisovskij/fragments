@@ -27,12 +27,6 @@ class FirstFragmentPresenter @Inject constructor(
         refresh()
     }
 
-    override fun onDestroy() {
-        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
-        appWatcher.expectWeaklyReachable(apiInteractor, "API INTERACTOR")
-        super.onDestroy()
-    }
-
     fun refresh() {
         viewState.startRefresh()
         apiInteractor.getAll()

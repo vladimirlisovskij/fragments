@@ -8,7 +8,7 @@ import android.widget.ProgressBar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
-import com.example.myapplication.data.room.Employee
+import com.example.myapplication.data.sqlite.SQLiteModule
 import com.example.myapplication.presenter.injectApplication.MainApplication
 import com.example.myapplication.presenter.mainActivity.MainActivity
 import moxy.MvpAppCompatFragment
@@ -65,11 +65,11 @@ class SecondPage : MvpAppCompatFragment(R.layout.fragment_second_page), SecondPa
         presenter.getItems()
     }
 
-    override fun setItems(strings: ArrayList<Employee>) {
+    override fun setItems(strings: ArrayList<SQLiteModule.City>) {
         adapter.containerList = strings
     }
 
-    override fun addItem(string: Employee) {
+    override fun addItem(string: SQLiteModule.City) {
         adapter.addItem(string)
     }
 

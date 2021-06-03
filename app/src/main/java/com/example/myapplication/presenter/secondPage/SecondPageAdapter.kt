@@ -7,22 +7,22 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
-import com.example.myapplication.data.room.Employee
+import com.example.myapplication.data.sqlite.SQLiteModule
 
 class SecondPageAdapter : RecyclerView.Adapter<SecondPageAdapter.ItemHolder>() {
     inner class ItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val cityTV: TextView = itemView.findViewById(R.id.itemTV)
-        private var employee: Employee? = null
+        private var City: SQLiteModule.City? = null
 
-        fun setData(city: Employee) {
-            employee = city
-            cityTV.text = employee?.cityName
+        fun setData(city: SQLiteModule.City) {
+            City = city
+            cityTV.text = City?.Name
         }
 
         init {
             cityTV.setOnClickListener {
-                employee?.let {
-                    onClick?.invoke(it.id.toString())
+                City?.let {
+                    onClick?.invoke(it.ID.toString())
                 }
             }
         }
@@ -30,8 +30,8 @@ class SecondPageAdapter : RecyclerView.Adapter<SecondPageAdapter.ItemHolder>() {
 
     var onClick: ( (String) -> Unit)? = null
 
-    var containerList: ArrayList<Employee>? = null
-        set (dataFormContainerList: ArrayList<Employee>?) {
+    var containerList: ArrayList<SQLiteModule.City>? = null
+        set (dataFormContainerList: ArrayList<SQLiteModule.City>?) {
             field = dataFormContainerList
             notifyDataSetChanged()
         }
@@ -51,7 +51,7 @@ class SecondPageAdapter : RecyclerView.Adapter<SecondPageAdapter.ItemHolder>() {
         }
     }
 
-    fun addItem(city: Employee) {
+    fun addItem(city: SQLiteModule.City) {
         containerList?.let {
             val index = it.size
             it.add(city)

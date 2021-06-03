@@ -1,5 +1,6 @@
 package com.example.myapplication.domain.interactors.database
-import com.example.myapplication.data.room.Employee
+
+import com.example.myapplication.data.sqlite.SQLiteModule
 import javax.inject.Inject
 
 class DBInteractor @Inject constructor (
@@ -13,11 +14,11 @@ class DBInteractor @Inject constructor (
         repository.setToastCallback(callBack)
     }
 
-    fun setGetCallback(callBack: ((ArrayList<Employee>) -> Unit) ) {
+    fun setGetCallback(callBack: ((ArrayList<SQLiteModule.City>) -> Unit) ) {
         repository.setGetCallback(callBack)
     }
 
-    fun setInsertCallback(callBack: (Employee?) -> Unit) {
+    fun setInsertCallback(callBack: (SQLiteModule.City?) -> Unit) {
         repository.setInsertCallback(callBack)
     }
 

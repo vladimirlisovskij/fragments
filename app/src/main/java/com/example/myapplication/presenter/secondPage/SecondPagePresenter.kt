@@ -32,13 +32,6 @@ class SecondPagePresenter@Inject constructor(
         }
     }
 
-    override fun onDestroy() {
-        val appWatcher: ObjectWatcher = AppWatcher.objectWatcher
-        appWatcher.expectWeaklyReachable(apiInteractor, "API INTERACTOR")
-        appWatcher.expectWeaklyReachable(dbInteractor, "API INTERACTOR")
-        super.onDestroy()
-    }
-
     fun getItems() {
         viewState.showBar(true)
         dbInteractor.getApi()
