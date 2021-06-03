@@ -3,25 +3,23 @@ package com.example.myapplication.data.repo
 import android.content.Context
 import android.location.Location
 import android.os.Handler
-import com.example.myapplication.data.retrofit.JSONData
-import com.example.myapplication.data.retrofit.RetrofitBuilder
-import com.example.myapplication.data.retrofit.ServerApi
-import com.example.myapplication.data.retrofit.WeatherContainer
+import com.example.myapplication.data.ktor.KtorBuilder
+import com.example.myapplication.data.ktor.JSONData
+import com.example.myapplication.data.ktor.WeatherContainer
 import com.example.myapplication.data.room.DAOBuilder
 import com.example.myapplication.data.room.Employee
 import com.example.myapplication.domain.interactors.api.APIRepo
 import com.example.myapplication.domain.interactors.database.DBRepo
 import com.example.myapplication.presenter.injectApplication.MainApplication
 import kotlinx.coroutines.*
-import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 import kotlin.collections.ArrayList
 
 class Repository @Inject constructor (
-        private val retrofitBuilder: RetrofitBuilder,
-        private val daoBuilder: DAOBuilder
+    private val ktorBuilder: KtorBuilder,
+    private val daoBuilder: DAOBuilder
 )   : APIRepo
     , DBRepo
 {
@@ -96,27 +94,24 @@ class Repository @Inject constructor (
         weatherCB = callBack
     }
 
-    private fun parseMes(mes: Response<JSONData>) : WeatherContainer {
+    private fun parseMes(mes: JSONData) : WeatherContainer {
         val container = WeatherContainer()
-        if (mes.isSuccessful) {
-            val jDoc = mes.body()
-            jDoc?.let {
-                val sunTime = SimpleDateFormat("h:mm a", Locale.ENGLISH)
-                sunTime.timeZone = TimeZone.getTimeZone("UTC")
-                val cutTime = SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z", Locale.ENGLISH)
-                cutTime.timeZone = TimeZone.getTimeZone("UTC")
+        mes.let {
+            val sunTime = SimpleDateFormat("h:mm a", Locale.ENGLISH)
+            sunTime.timeZone = TimeZone.getTimeZone("UTC")
+            val cutTime = SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z", Locale.ENGLISH)
+            cutTime.timeZone = TimeZone.getTimeZone("UTC")
 
-                container.tempStr = TEMP_LAB + it.main?.temp.toString()
-                container.humStr = HUM_LAB + it.main?.humidity.toString()
-                container.wMainStr = WMAIN_LAB + it.weather?.elementAt(0)?.main
-                container.wDescStr = WDESC_LAB + it.weather?.elementAt(0)?.description
-                container.windStr = WIND_LAB + it.wind?.speed.toString()
-                container.ssetStr = SSET_LAB + it.sys?.sunset?.let { sunset -> sunTime.format(Date(sunset * 1000))}
-                container.sriseStr = SRISE_LAB + it.sys?.sunrise?.let { sunrise -> sunTime.format(Date(sunrise * 1000))}
-                container.timeStr = TIME_LAB + cutTime.format(Date(System.currentTimeMillis()))
-                container.name = NAME_LAB + it.name
-                container.id = it.id
-            }
+            container.tempStr = TEMP_LAB + it.main?.temp.toString()
+            container.humStr = HUM_LAB + it.main?.humidity.toString()
+            container.wMainStr = WMAIN_LAB + it.weather?.elementAt(0)?.main
+            container.wDescStr = WDESC_LAB + it.weather?.elementAt(0)?.description
+            container.windStr = WIND_LAB + it.wind?.speed.toString()
+            container.ssetStr = SSET_LAB + it.sys?.sunset?.let { sunset -> sunTime.format(Date(sunset * 1000))}
+            container.sriseStr = SRISE_LAB + it.sys?.sunrise?.let { sunrise -> sunTime.format(Date(sunrise * 1000))}
+            container.timeStr = TIME_LAB + cutTime.format(Date(System.currentTimeMillis()))
+            container.name = NAME_LAB + it.name
+            container.id = it.id
         }
         return container
     }
@@ -125,12 +120,7 @@ class Repository @Inject constructor (
         val lat = location?.latitude ?: 0.0
         val lon = location?.longitude ?: 0.0
         scope.launch(Dispatchers.IO + weatherExceptionHandler) {
-            val mes: Response<JSONData> = retrofitBuilder
-                .getRetrofit()
-                .create(ServerApi::class.java)
-                .getMessage(ServerApi.getGeoRequest(lat, lon))
-
-            val container = parseMes(mes)
+            val container = parseMes(ktorBuilder.getGeoRequst(lat, lon))
             container.id?.let {
                 setCityId(Integer.valueOf(it))
                 Employee(Integer.valueOf(it).toLong(), container.name ?: "unknown")
@@ -156,13 +146,8 @@ class Repository @Inject constructor (
                     .getSharedPreferences(PREF_KEY, Context.MODE_PRIVATE)
                     .getInt(CITY_KEY, 6295630)
 
-                val mes = retrofitBuilder
-                    .getRetrofit()
-                    .create(ServerApi::class.java)
-                    .getMessage(ServerApi.getRequest(curCityID))
-
                 withContext(Dispatchers.Main) {
-                    weatherCB?.invoke(parseMes(mes))
+                    weatherCB?.invoke(parseMes(ktorBuilder.getIDRequest(curCityID)))
                 }
             }
         }
@@ -180,11 +165,7 @@ class Repository @Inject constructor (
     override fun insert(id: String) {
         scope.launch(Dispatchers.IO + insertExceptionHandler) {
             val intId = Integer.valueOf(id)
-            val mes = retrofitBuilder
-                .getRetrofit()
-                .create(ServerApi::class.java)
-                .getMessage(ServerApi.getRequest(intId))
-            val container = parseMes(mes)
+            val container = parseMes(ktorBuilder.getIDRequest(intId))
             if (container.name == null) {
                 withContext(Dispatchers.Main) {
                     insertCB?.invoke(null)

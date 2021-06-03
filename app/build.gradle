@@ -71,4 +71,9 @@ dependencies {
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 
     implementation("com.github.terrakok:cicerone:7.0")
+
+    implementation "io.ktor:ktor-client-core:1.6.0"
+    implementation "io.ktor:ktor-client-android:1.6.0"
+    implementation "io.ktor:ktor-client-json-jvm:1.6.0"
+    implementation "io.ktor:ktor-client-gson:1.6.0"
 }

@@ -1,7 +1,7 @@
 package com.example.myapplication.domain.interactors.api
 
 import android.location.Location
-import com.example.myapplication.data.retrofit.WeatherContainer
+import com.example.myapplication.data.ktor.WeatherContainer
 import javax.inject.Inject
 
 class APIInteractor @Inject constructor (

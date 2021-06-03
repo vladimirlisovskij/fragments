@@ -1,4 +1,4 @@
-package com.example.myapplication.data.retrofit
+package com.example.myapplication.data.ktor
 
 class Weather {
     val main: String? = null

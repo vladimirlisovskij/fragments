@@ -1,6 +1,6 @@
 package com.example.myapplication.presenter.firstPage
 
-import com.example.myapplication.data.retrofit.WeatherContainer
+import com.example.myapplication.data.ktor.WeatherContainer
 import moxy.MvpView
 import moxy.viewstate.strategy.alias.SingleState
 import moxy.viewstate.strategy.alias.Skip

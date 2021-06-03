@@ -59,7 +59,7 @@ class MainActivity
                     R.anim.slide_in_l,
                     R.anim.fade_in,
                     R.anim.fade_out,
-                    R.anim.slide_out
+                    R.anim.slide_out_l
                 )
             } else if (nextFragment is ThirdPageFragment) {
                 fragmentTransaction.setCustomAnimations(
@@ -70,10 +70,8 @@ class MainActivity
                 )
             } else if (nextFragment is SecondPage) {
                 fragmentTransaction.setCustomAnimations(
-                    R.anim.slide_in_l,
-                    R.anim.fade_in,
-                    R.anim.fade_out,
-                    R.anim.slide_out
+                    R.anim.slide_in_up,
+                    R.anim.fade_in
                 )
             }
         }

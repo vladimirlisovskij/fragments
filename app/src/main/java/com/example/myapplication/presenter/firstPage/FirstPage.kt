@@ -5,7 +5,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.myapplication.R
-import com.example.myapplication.data.retrofit.WeatherContainer
+import com.example.myapplication.data.ktor.WeatherContainer
 import com.example.myapplication.presenter.injectApplication.MainApplication
 import moxy.MvpAppCompatFragment
 import moxy.ktx.moxyPresenter

@@ -1,7 +1,7 @@
 package com.example.myapplication.domain.interactors.api
 
 import android.location.Location
-import com.example.myapplication.data.retrofit.WeatherContainer
+import com.example.myapplication.data.ktor.WeatherContainer
 
 interface APIRepo {
     fun getWeather()
