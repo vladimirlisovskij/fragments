@@ -9,39 +9,44 @@ import javax.inject.Inject
 class MainPresenter @Inject constructor(
     private val router: Router
 ) : MvpPresenter<MainView>() {
+    private var isSecondPage = false
+
     fun openFirst() {
-        router.newRootScreen(
-            Screens.screen2
-        )
-        router.navigateTo(
-            Screens.screen1
-        )
+        router.newRootScreen(Screens.screen2)
+        router.navigateTo(Screens.screen1)
+        isSecondPage = true
         viewState.moveToFirst()
     }
 
     fun toFirst() {
-        router.newRootScreen(
-            Screens.screen1
-        )
+        if (isSecondPage) {
+            router.replaceScreen(Screens.screen1)
+        } else {
+            router.navigateTo(Screens.screen1)
+            isSecondPage = true
+        }
         viewState.moveToFirst()
     }
 
     fun toSecond() {
-        router.newRootScreen(
-            Screens.screen2
-        )
+        router.newRootScreen(Screens.screen2)
+        isSecondPage = false
         viewState.moveToSecond()
     }
 
     fun toThird() {
-        router.newRootScreen(
-            Screens.screen3
-        )
+        if (isSecondPage) {
+            router.replaceScreen(Screens.screen3)
+        } else {
+            router.navigateTo(Screens.screen3)
+            isSecondPage = true
+        }
         viewState.moveToThird()
     }
 
     fun onBack() {
         router.exit()
+        isSecondPage = false
         viewState.moveToSecond()
     }
 }
